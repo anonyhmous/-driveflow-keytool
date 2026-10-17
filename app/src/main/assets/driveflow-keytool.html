@@ -1,0 +1,2828 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:;">
+  <title>DriveFlow - أداة إصدار المفاتيح | Key Tool</title>
+  <style>
+    /* ==========================================================================
+       1. CSS VARIABLES & RESET
+       ========================================================================== */
+    :root {
+      --bg-navy: #07131B;
+      --surface: #0E2230;
+      --surface-elevated: #142F42;
+      --surface-card: #102738;
+      --border: #1C3B52;
+      --border-focus: #F6C945;
+      --gold: #F6C945;
+      --gold-hover: #E5B938;
+      --gold-dim: rgba(246, 201, 69, 0.15);
+      --mint: #7CF5C4;
+      --mint-dim: rgba(124, 245, 196, 0.15);
+      --text: #FFFFFF;
+      --text-muted: #9FB3C2;
+      --verdict-green: #22C55E;
+      --verdict-orange: #F59E0B;
+      --verdict-red: #EF4444;
+      --verdict-gray: #64748B;
+      --font-stack: system-ui, -apple-system, "Segoe UI", Roboto, "Cairo", Tahoma, sans-serif;
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --bottom-nav-height: 70px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      background-color: var(--bg-navy);
+      color: var(--text);
+      font-family: var(--font-stack);
+      font-size: 15px;
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
+      direction: rtl;
+    }
+
+    [dir="ltr"] body, html[dir="ltr"] {
+      direction: ltr;
+    }
+
+    /* ==========================================================================
+       2. TYPOGRAPHY & LAYOUT
+       ========================================================================== */
+    .app-container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 16px 16px calc(var(--bottom-nav-height) + 24px) 16px;
+      min-height: 100vh;
+    }
+
+    header.app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0 20px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #16374F 0%, #0E2230 100%);
+      border: 1px solid var(--gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--gold);
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .brand-titles h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 0.5px;
+    }
+
+    .brand-titles p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-lang {
+      background: var(--surface-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 38px;
+    }
+
+    .lock-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      min-height: 38px;
+    }
+
+    .lock-status-badge.unlocked {
+      background: var(--mint-dim);
+      color: var(--mint);
+      border-color: rgba(124, 245, 196, 0.3);
+    }
+
+    .lock-status-badge.locked {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--verdict-red);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    /* ==========================================================================
+       3. TABS & VIEW SWITCHING
+       ========================================================================== */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.2s ease-in-out;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    nav.bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--bottom-nav-height);
+      background: rgba(14, 34, 48, 0.95);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 100;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 4px;
+    }
+
+    .nav-btn {
+      flex: 1;
+      height: 100%;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 0.72rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 6px 2px;
+      min-width: 48px;
+    }
+
+    .nav-btn svg {
+      width: 22px;
+      height: 22px;
+      fill: currentColor;
+      transition: transform 0.15s;
+    }
+
+    .nav-btn.active {
+      color: var(--gold);
+    }
+
+    .nav-btn.active svg {
+      transform: scale(1.1);
+      fill: var(--gold);
+    }
+
+    /* ==========================================================================
+       4. CARDS & FORMS & BUTTONS
+       ========================================================================== */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .card-title svg {
+      width: 20px;
+      height: 20px;
+      fill: var(--gold);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      background: var(--bg-navy);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      min-height: 48px;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: var(--gold);
+      box-shadow: 0 0 0 2px var(--gold-dim);
+    }
+
+    .form-input.code-font, .form-textarea.code-font {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      letter-spacing: 0.5px;
+    }
+
+    .form-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .form-error {
+      font-size: 0.78rem;
+      color: var(--verdict-red);
+      margin-top: 4px;
+      display: none;
+    }
+
+    .form-error.visible {
+      display: block;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s ease;
+      min-height: 48px;
+      text-decoration: none;
+      user-select: none;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--gold);
+      color: #07131B;
+    }
+
+    .btn-primary:hover {
+      background: var(--gold-hover);
+    }
+
+    .btn-mint {
+      background: var(--mint);
+      color: #07131B;
+    }
+
+    .btn-secondary {
+      background: var(--surface-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--text-muted);
+    }
+
+    .btn-danger {
+      background: var(--verdict-red);
+      color: #FFFFFF;
+    }
+
+    .btn-block {
+      width: 100%;
+    }
+
+    .btn-sm {
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      min-height: 38px;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Chips & Radio Selectors */
+    .chips-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .chip-btn {
+      background: var(--bg-navy);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      min-height: 40px;
+      transition: all 0.15s;
+    }
+
+    .chip-btn.active {
+      background: var(--gold-dim);
+      border-color: var(--gold);
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    /* Custom Checkbox / Switch */
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.9rem;
+      margin: 8px 0;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--gold);
+      cursor: pointer;
+    }
+
+    /* Warnings and Banners */
+    .banner-danger {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+      color: #FCA5A5;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      line-height: 1.5;
+    }
+
+    .banner-warning {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #FCD34D;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+    }
+
+    .banner-info {
+      background: rgba(124, 245, 196, 0.1);
+      border: 1px solid rgba(124, 245, 196, 0.3);
+      color: var(--mint);
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+    }
+
+    /* Key Display Box */
+    .key-output-box {
+      background: #040A0F;
+      border: 1px solid var(--gold);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.9rem;
+      color: var(--gold);
+      word-break: break-all;
+      user-select: all;
+      margin: 12px 0;
+      direction: ltr;
+      text-align: left;
+      line-height: 1.4;
+    }
+
+    /* Status Badges */
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .status-chip.active-status {
+      background: rgba(124, 245, 196, 0.15);
+      color: var(--mint);
+      border: 1px solid rgba(124, 245, 196, 0.4);
+    }
+
+    .status-chip.expiring-status {
+      background: rgba(246, 201, 69, 0.15);
+      color: var(--gold);
+      border: 1px solid rgba(246, 201, 69, 0.4);
+    }
+
+    .status-chip.expired-status {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--verdict-red);
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
+    /* Summary Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--gold);
+      margin-top: 4px;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Customers List */
+    .search-box {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    .customer-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: border-color 0.15s, background-color 0.15s;
+    }
+
+    .customer-item:hover {
+      border-color: var(--gold-dim);
+      background: var(--surface-card);
+    }
+
+    .customer-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .customer-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .customer-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .customer-device {
+      font-family: monospace;
+      color: #A5B4FC;
+      direction: ltr;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(4, 10, 15, 0.85);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-dialog {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+    }
+
+    /* Test Vectors Result */
+    .test-result-item {
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-navy);
+      font-size: 0.85rem;
+    }
+
+    .test-result-item.pass {
+      border-color: var(--verdict-green);
+      background: rgba(34, 197, 94, 0.08);
+    }
+
+    .test-result-item.fail {
+      border-color: var(--verdict-red);
+      background: rgba(239, 68, 68, 0.08);
+    }
+
+    .test-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .test-detail {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      word-break: break-all;
+    }
+
+    /* History Timeline */
+    .history-item {
+      padding: 10px;
+      border-right: 2px solid var(--gold);
+      background: rgba(20, 47, 66, 0.3);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      margin-bottom: 8px;
+      font-size: 0.8rem;
+    }
+    [dir="ltr"] .history-item {
+      border-right: none;
+      border-left: 2px solid var(--gold);
+      border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    }
+
+    /* Utility */
+    .text-center { text-align: center; }
+    .mt-2 { margin-top: 8px; }
+    .mt-4 { margin-top: 16px; }
+    .mb-2 { margin-bottom: 8px; }
+    .mb-4 { margin-bottom: 16px; }
+    .gap-2 { gap: 8px; }
+    .d-flex { display: flex; }
+    .flex-wrap { flex-wrap: wrap; }
+    .space-between { justify-content: space-between; }
+    .align-center { align-items: center; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand-wrap">
+        <div class="brand-icon">
+          <!-- Digital Key Icon -->
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M7 14c-2.76 0-5-2.24-5-5s2.24-5 5-5c2.42 0 4.44 1.72 4.9 4h6.1l2 2-2 2h-2v2h-2v-2h-2.1c-.46 2.28-2.48 4-4.9 4zm0-8C5.34 6 4 7.34 4 9s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+          </svg>
+        </div>
+        <div class="brand-titles">
+          <h1 data-i18n="app_title">DriveFlow Key Tool</h1>
+          <p data-i18n="app_subtitle">أداة المالك لإصدار مفاتيح التفعيل دون اتصال</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btnLockToggle" class="lock-status-badge locked" title="حالة القفل">
+          <span id="lockStatusIcon">🔒</span>
+          <span id="lockStatusText" data-i18n="status_locked">مقفل</span>
+        </button>
+        <button id="btnLangToggle" class="btn-lang" title="Switch Language">English</button>
+      </div>
+    </header>
+
+    <!-- TAB 1: SETUP / KEYS -->
+    <section id="tab-setup" class="tab-content">
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+          <span data-i18n="setup_heading">إعداد زوج المفاتيح (ECDSA P-256)</span>
+        </div>
+
+        <div id="setupNoKeyBanner" class="banner-warning" style="display: none;">
+          <strong data-i18n="setup_no_key_title">لم يتم إنشاء مفاتيح بعد!</strong>
+          <div data-i18n="setup_no_key_desc">يجب إنشاء زوج مفاتيح وتعيين كلمة مرور لحمايته قبل البدء في إصدار المفاتيح.</div>
+        </div>
+
+        <div class="banner-danger">
+          <strong data-i18n="warning_title">تنبيه حرج جداً:</strong><br>
+          <span data-i18n="setup_warning_text">بدون النسخة الاحتياطية، إذا تم مسح بيانات المتصفح فلن تتمكن من إصدار مفاتيح تقبلها التطبيقات القديمة، وإنشاء زوج مفاتيح جديد يجعل كل مفتاح بعته يتوقف عن العمل في التطبيقات المبنية بالمفتاح العام القديم.</span>
+        </div>
+
+        <!-- Create Key Pair Box -->
+        <div id="createKeySection" style="margin-bottom: 20px;">
+          <button id="btnCreateKeyPair" class="btn btn-primary btn-block">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+            <span data-i18n="btn_create_key_pair">إنشاء زوج مفاتيح جديد</span>
+          </button>
+        </div>
+
+        <!-- Public Key Box (when exists) -->
+        <div id="publicKeyDisplaySection" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" data-i18n="lbl_public_key">المفتاح العام (SPKI Base64):</label>
+            <div class="form-hint" data-i18n="public_key_hint">انسخ هذا المفتاح والصقه في خصائص بناء التطبيق LICENSE_PUBLIC_KEY:</div>
+            <div id="publicKeyText" class="key-output-box"></div>
+            <button id="btnCopyPublicKey" class="btn btn-secondary btn-sm mt-2">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+              <span data-i18n="btn_copy_public_key">نسخ المفتاح العام</span>
+            </button>
+          </div>
+
+          <hr style="border: 0; border-top: 1px solid var(--border); margin: 20px 0;">
+
+          <!-- Backup & Restore Buttons -->
+          <div class="form-group">
+            <label class="form-label" data-i18n="lbl_backup_restore">النسخ الاحتياطي والاستعادة:</label>
+            <div class="btn-group">
+              <button id="btnBackupKeys" class="btn btn-mint btn-sm">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                <span data-i18n="btn_backup_keys">تحميل نسخة احتياطية (JSON)</span>
+              </button>
+              <button id="btnTriggerRestore" class="btn btn-secondary btn-sm">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/></svg>
+                <span data-i18n="btn_restore_keys">استعادة من ملف</span>
+              </button>
+              <input type="file" id="fileRestoreInput" accept=".json" style="display: none;">
+            </div>
+          </div>
+
+          <!-- Danger: Regenerate -->
+          <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+            <button id="btnShowRegenerateModal" class="btn btn-danger btn-sm">
+              <span data-i18n="btn_regenerate">إعادة إنشاء المفتاح (خطر)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: ISSUE KEY -->
+    <section id="tab-issue" class="tab-content active">
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+          <span data-i18n="issue_heading">إصدار مفتاح اشتراك جديد</span>
+        </div>
+
+        <div id="issueLockedNotice" class="banner-warning" style="display: none;">
+          <span data-i18n="issue_locked_msg">الأداة مقفلة. يرجى إدخال كلمة المرور لفك القفل قبل التمكن من التوقيع على المفاتيح.</span>
+          <button id="btnUnlockBanner" class="btn btn-primary btn-sm mt-2" data-i18n="btn_unlock_now">فك القفل الآن</button>
+        </div>
+
+        <form id="issueForm">
+          <div class="form-group">
+            <label class="form-label" for="custName" data-i18n="lbl_customer_name">اسم السائق:</label>
+            <input type="text" id="custName" class="form-input" placeholder="مثال: أحمد محمود" required autocomplete="off">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="custPhone" data-i18n="lbl_customer_phone">رقم الواتساب:</label>
+            <input type="tel" id="custPhone" class="form-input" placeholder="مثال: 01128440045 أو 201128440045" required autocomplete="off" dir="ltr">
+            <div class="form-hint" data-i18n="phone_hint">يقبل أي صيغة مصرية، وسيتم تحويله للصيغة الدولية تلقائياً.</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="deviceCodeInput" data-i18n="lbl_device_code">كود الجهاز (32 حرف هكس):</label>
+            <input type="text" id="deviceCodeInput" class="form-input code-font" placeholder="ABCD-EF01-2345-6789-ABCD-EF01-2345-6789" required autocomplete="off" dir="ltr">
+            <div id="deviceCodeError" class="form-error" data-i18n="error_device_code">يجب إدخال 32 حرف هكس صالحين (0-9, A-F).</div>
+            <div class="form-hint" data-i18n="device_code_hint">يقبل الكود بحروف كبيرة أو صغيرة، مع فواصل أو بدون.</div>
+          </div>
+
+          <!-- Existing Customer Alert / Extend Option -->
+          <div id="renewalBanner" class="banner-info" style="display: none;">
+            <strong data-i18n="renewal_found_title">هذا الجهاز مسجل بالفعل في السجل!</strong>
+            <div id="renewalFoundDetails" class="mt-1"></div>
+            <label class="checkbox-label mt-2">
+              <input type="checkbox" id="chkExtendExpiry" checked>
+              <span data-i18n="chk_extend_from_expiry">تمديد الصلاحية من تاريخ الانتهاء الحالي بدلاً من اليوم</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" data-i18n="lbl_plan_type">نوع الاشتراك:</label>
+            <div class="chips-group">
+              <button type="button" class="chip-btn active" data-plan="1" id="chipPlanPaid" data-i18n="plan_paid">مدفوع (Paid)</button>
+              <button type="button" class="chip-btn" data-plan="2" id="chipPlanTrial" data-i18n="plan_trial">تجريبي (Trial)</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" data-i18n="lbl_duration">مدة الاشتراك:</label>
+            <div class="chips-group" id="durationChips">
+              <button type="button" class="chip-btn" data-days="2">2 <span data-i18n="unit_days">يوم</span> (تجريبي)</button>
+              <button type="button" class="chip-btn active" data-days="30">30 <span data-i18n="unit_days">يوم</span></button>
+              <button type="button" class="chip-btn" data-days="60">60 <span data-i18n="unit_days">يوم</span></button>
+              <button type="button" class="chip-btn" data-days="90">90 <span data-i18n="unit_days">يوم</span></button>
+              <button type="button" class="chip-btn" data-days="180">180 <span data-i18n="unit_days">يوم</span></button>
+              <button type="button" class="chip-btn" data-days="365">365 <span data-i18n="unit_days">يوم</span></button>
+              <button type="button" class="chip-btn" data-days="custom" id="chipCustomDays" data-i18n="duration_custom">مدة مخصصة</button>
+            </div>
+            <div id="customDaysWrap" style="display: none; margin-top: 10px;">
+              <input type="number" id="customDaysInput" class="form-input" min="1" max="3650" placeholder="أدخل عدد الأيام">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group">
+              <label class="form-label" for="amountPaid" data-i18n="lbl_amount">المبلغ المدفوع (ج.م):</label>
+              <input type="number" id="amountPaid" class="form-input" value="150" min="0" step="5">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="payMethod" data-i18n="lbl_pay_method">طريقة الدفع:</label>
+              <select id="payMethod" class="form-select">
+                <option value="InstaPay" selected>InstaPay (إنستاباي)</option>
+                <option value="Cash" data-i18n="pay_cash">كاش (نقدي)</option>
+                <option value="Other" data-i18n="pay_other">أخرى</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="issueNote" data-i18n="lbl_note">ملاحظات إضافية (اختياري):</label>
+            <input type="text" id="issueNote" class="form-input" placeholder="مثال: تحويل إنستاباي، موديل السيارة، الخ">
+          </div>
+
+          <button type="submit" id="btnGenerateKey" class="btn btn-primary btn-block">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+            <span data-i18n="btn_generate_key">توليد وتوقيع مفتاح التفعيل</span>
+          </button>
+        </form>
+
+        <!-- Generated Key Output Display -->
+        <div id="generatedOutputSection" style="display: none; margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+          <div class="card-title" style="color: var(--mint);">
+            <svg viewBox="0 0 24 24" fill="var(--mint)"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            <span data-i18n="key_generated_success">تم إصدار المفتاح وحفظه بنجاح!</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" data-i18n="lbl_generated_token">كود التفعيل (DF1 Token):</label>
+            <div id="generatedTokenDisplay" class="key-output-box"></div>
+            <div class="form-hint" id="tokenMetaInfo"></div>
+          </div>
+
+          <div class="btn-group">
+            <button id="btnCopyGeneratedKey" class="btn btn-secondary">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+              <span data-i18n="btn_copy">نسخ الكود</span>
+            </button>
+            <button id="btnSendWhatsApp" class="btn btn-mint">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2zm.01 1.67c2.2 0 4.26.86 5.82 2.41a8.16 8.16 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24z"/></svg>
+              <span data-i18n="btn_send_whatsapp">إرسال عبر واتساب</span>
+            </button>
+            <button id="btnShareKey" class="btn btn-secondary">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+              <span data-i18n="btn_share">مشاركة</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: CUSTOMERS (LEDGER) -->
+    <section id="tab-customers" class="tab-content">
+      <!-- Summary Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stat_active_customers">العملاء النشطون</div>
+          <div id="statActiveCount" class="stat-value" style="color: var(--mint);">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stat_expiring_soon">ينتهي خلال 3 أيام</div>
+          <div id="statExpiringCount" class="stat-value" style="color: var(--gold);">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stat_month_income">دخل الشهر الحالي</div>
+          <div id="statMonthIncome" class="stat-value">0 ج.م</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stat_total_income">إجمالي الدخل</div>
+          <div id="statTotalIncome" class="stat-value">0 ج.م</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title space-between">
+          <div class="d-flex align-center gap-2">
+            <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            <span data-i18n="customers_heading">سجل المشتركين (Ledger)</span>
+          </div>
+          <div class="btn-group">
+            <button id="btnExportCsv" class="btn btn-secondary btn-sm" title="تصدير CSV">CSV</button>
+            <button id="btnExportJson" class="btn btn-secondary btn-sm" title="تصدير JSON">JSON</button>
+            <button id="btnImportJsonTrigger" class="btn btn-secondary btn-sm" title="استيراد JSON">📥</button>
+            <input type="file" id="fileLedgerImportInput" accept=".json" style="display: none;">
+          </div>
+        </div>
+
+        <div class="search-box">
+          <input type="text" id="customerSearchInput" class="form-input" placeholder="🔍 بحث بالاسم، الهاتف، أو كود الجهاز...">
+        </div>
+
+        <div id="customerListContainer">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: VERIFY -->
+    <section id="tab-verify" class="tab-content">
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+          <span data-i18n="verify_heading">التحقق من مفتاح وفحصه</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="verifyTokenInput" data-i18n="lbl_paste_key">الصق كود التفعيل هنا (DF1...):</label>
+          <textarea id="verifyTokenInput" class="form-textarea code-font" rows="3" placeholder="DF1.AQED..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="verifyDeviceCodeInput" data-i18n="lbl_verify_device_code">كود الجهاز للمقارنة (اختياري):</label>
+          <input type="text" id="verifyDeviceCodeInput" class="form-input code-font" placeholder="ABCD-EF01-2345-6789-ABCD-EF01-2345-6789">
+        </div>
+
+        <button id="btnPerformVerify" class="btn btn-primary btn-block">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          <span data-i18n="btn_verify_now">فحص المفتاح</span>
+        </button>
+
+        <div id="verifyResultSection" style="display: none; margin-top: 20px;">
+          <!-- Result Banner -->
+          <div id="verifyStatusBanner" class="banner-info"></div>
+
+          <!-- Parsed Fields Details Table -->
+          <table style="width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 0.85rem;">
+            <tbody>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 8px; color: var(--text-muted);" data-i18n="lbl_plan">الخطة:</td>
+                <td id="vPlan" style="padding: 8px; font-weight: 700;">-</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 8px; color: var(--text-muted);" data-i18n="lbl_issue_date">تاريخ الإصدار:</td>
+                <td id="vIssued" style="padding: 8px;">-</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 8px; color: var(--text-muted);" data-i18n="lbl_expiry_date">تاريخ الانتهاء:</td>
+                <td id="vExpiry" style="padding: 8px; font-weight: 700;">-</td>
+              </tr>
+              <tr style="border-bottom: 1px solid var(--border);">
+                <td style="padding: 8px; color: var(--text-muted);" data-i18n="lbl_token_device_id">كود الجهاز المدمج:</td>
+                <td id="vDevice" style="padding: 8px; font-family: monospace; word-break: break-all; direction: ltr;">-</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; color: var(--text-muted);" data-i18n="lbl_device_match">مطابقة كود الجهاز:</td>
+                <td id="vDeviceMatch" style="padding: 8px;">-</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: SETTINGS & SELF-TEST -->
+    <section id="tab-settings" class="tab-content">
+      <!-- Self-Test Section -->
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          <span data-i18n="selftest_heading">فحص النظام واختبار المتجهات (Self-Test)</span>
+        </div>
+        <div class="form-hint mb-4" data-i18n="selftest_desc">
+          يقوم هذا الاختبار بفحص صحة التشفير ومطابقة التوقيع والتحقق رسمياً مع متجهات الاختبار المعيارية لـ DriveFlow.
+        </div>
+        <button id="btnRunTestVectors" class="btn btn-mint btn-block">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          <span data-i18n="btn_run_tests">تشغيل متجهات الاختبار (Run Test Vectors)</span>
+        </button>
+
+        <div id="testVectorsContainer" style="margin-top: 16px;"></div>
+      </div>
+
+      <!-- Owner Config Section -->
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span data-i18n="settings_owner_heading">بيانات المالك وقوالب الرسائل</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="cfgOwnerWhatsApp" data-i18n="lbl_owner_whatsapp">رقم واتساب المالك:</label>
+          <input type="text" id="cfgOwnerWhatsApp" class="form-input" value="201128440045" dir="ltr">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="cfgOwnerInstaPay" data-i18n="lbl_owner_instapay">حساب إنستاباي للدفع:</label>
+          <input type="text" id="cfgOwnerInstaPay" class="form-input" value="01122104999" dir="ltr">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="cfgPriceText" data-i18n="lbl_price_text">نص الأسعار الافتراضي:</label>
+          <input type="text" id="cfgPriceText" class="form-input" value="30 يوماً: 150 ج.م / 90 يوماً: 400 ج.م">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="cfgTplKeyMsg" data-i18n="lbl_tpl_key">قالب رسالة إرسال المفتاح (واتساب):</label>
+          <textarea id="cfgTplKeyMsg" class="form-textarea" rows="4"></textarea>
+          <div class="form-hint">{name}, {plan}, {expiry}, {device}, {key}</div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="cfgTplReminder" data-i18n="lbl_tpl_reminder">قالب رسالة التذكير بالتجديد:</label>
+          <textarea id="cfgTplReminder" class="form-textarea" rows="4"></textarea>
+          <div class="form-hint">{name}, {days_left}, {expiry}, {instapay}</div>
+        </div>
+
+        <button id="btnSaveSettings" class="btn btn-primary btn-block">
+          <span data-i18n="btn_save_settings">حفظ الإعدادات</span>
+        </button>
+      </div>
+
+      <!-- Security / Passphrase Section -->
+      <div class="card">
+        <div class="card-title">
+          <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+          <span data-i18n="security_heading">أمان الأداة</span>
+        </div>
+
+        <button id="btnChangePassphraseTrigger" class="btn btn-secondary btn-block mb-2">
+          <span data-i18n="btn_change_passphrase">تغيير كلمة المرور</span>
+        </button>
+
+        <button id="btnClearAllDataTrigger" class="btn btn-danger btn-block mt-4">
+          <span data-i18n="btn_clear_all_data">مسح جميع البيانات والمفاتيح</span>
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <!-- BOTTOM NAVIGATION BAR -->
+  <nav class="bottom-nav">
+    <button class="nav-btn" data-target="tab-setup" id="navBtnSetup">
+      <svg viewBox="0 0 24 24"><path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>
+      <span data-i18n="nav_keys">المفاتيح</span>
+    </button>
+    <button class="nav-btn active" data-target="tab-issue" id="navBtnIssue">
+      <svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+      <span data-i18n="nav_issue">إصدار</span>
+    </button>
+    <button class="nav-btn" data-target="tab-customers" id="navBtnCustomers">
+      <svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      <span data-i18n="nav_customers">العملاء</span>
+    </button>
+    <button class="nav-btn" data-target="tab-verify" id="navBtnVerify">
+      <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+      <span data-i18n="nav_verify">فحص</span>
+    </button>
+    <button class="nav-btn" data-target="tab-settings" id="navBtnSettings">
+      <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+      <span data-i18n="nav_settings">الإعدادات</span>
+    </button>
+  </nav>
+
+  <!-- ==========================================================================
+       MODALS
+       ========================================================================== -->
+  <!-- Modal: Passphrase / Unlock -->
+  <div id="modalUnlock" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="modalUnlockTitle" class="modal-title" data-i18n="modal_unlock_title">فك قفل الأداة</h3>
+        <button type="button" class="modal-close-btn" id="btnCloseUnlockModal">&times;</button>
+      </div>
+      <div id="modalUnlockBody">
+        <p class="mb-4" id="modalUnlockPrompt" data-i18n="modal_unlock_prompt">أدخل كلمة المرور لفك تشفير المفتاح الخاص وتوقيع المفاتيح:</p>
+        <div class="form-group">
+          <input type="password" id="inputPassphrase" class="form-input" placeholder="••••••••" autocomplete="current-password">
+          <div id="unlockError" class="form-error" data-i18n="error_wrong_passphrase">كلمة المرور غير صحيحة، يرجى المحاولة ثانية.</div>
+        </div>
+        <button id="btnSubmitUnlock" class="btn btn-primary btn-block">
+          <span data-i18n="btn_unlock">فك القفل</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Set Passphrase (on create / restore) -->
+  <div id="modalSetPass" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 class="modal-title" data-i18n="modal_setpass_title">تعيين كلمة مرور للمفتاح</h3>
+        <button type="button" class="modal-close-btn" id="btnCloseSetPassModal">&times;</button>
+      </div>
+      <p class="mb-4" data-i18n="modal_setpass_desc">اختر كلمة مرور قوية (8 أحرف على الأقل) لتشفير وحفظ المفتاح الخاص محلياً:</p>
+      <div class="form-group">
+        <label class="form-label" data-i18n="lbl_new_passphrase">كلمة المرور الجديدة:</label>
+        <input type="password" id="inputSetPass1" class="form-input" placeholder="8 أحرف كحد أدنى" autocomplete="new-password">
+      </div>
+      <div class="form-group">
+        <label class="form-label" data-i18n="lbl_confirm_passphrase">تأكيد كلمة المرور:</label>
+        <input type="password" id="inputSetPass2" class="form-input" placeholder="أعد إدخال كلمة المرور" autocomplete="new-password">
+        <div id="setPassError" class="form-error"></div>
+      </div>
+      <button id="btnSubmitSetPass" class="btn btn-primary btn-block">
+        <span data-i18n="btn_save_encrypt">تشفير وحفظ المفتاح</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Modal: Customer Details & Renewal -->
+  <div id="modalCustomerDetails" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="detCustName" class="modal-title">تفاصيل العميل</h3>
+        <button type="button" class="modal-close-btn" id="btnCloseDetailsModal">&times;</button>
+      </div>
+      <div id="modalCustomerContent">
+        <div class="mb-2">
+          <strong>واتساب:</strong> <span id="detCustPhone" dir="ltr"></span>
+        </div>
+        <div class="mb-2">
+          <strong>كود الجهاز:</strong><br>
+          <span id="detCustDevice" class="customer-device" style="word-break: break-all; display: block; background: var(--bg-navy); padding: 8px; border-radius: 4px; margin-top: 4px;"></span>
+        </div>
+        <div class="mb-2">
+          <strong>الحالة الحالية:</strong> <span id="detCustStatus"></span>
+        </div>
+        <div class="mb-2">
+          <strong>تاريخ الانتهاء:</strong> <span id="detCustExpiry"></span> (<span id="detCustDaysLeft"></span>)
+        </div>
+        <div class="mb-4">
+          <strong>ملاحظات:</strong>
+          <input type="text" id="detCustNoteInput" class="form-input mt-1">
+          <button id="btnSaveCustNote" class="btn btn-secondary btn-sm mt-2">حفظ الملاحظة</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">سجل المفاتيح المصدرة لهذا العميل:</label>
+          <div id="detHistoryContainer"></div>
+        </div>
+
+        <div class="btn-group mt-4">
+          <button id="btnQuickRenew" class="btn btn-primary btn-sm">تجديد الاشتراك</button>
+          <button id="btnSendReminderWhatsApp" class="btn btn-mint btn-sm">إرسال تذكير واتساب</button>
+          <button id="btnDeleteCustomer" class="btn btn-danger btn-sm">حذف العميل</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Confirmation for Danger Actions -->
+  <div id="modalConfirmWord" class="modal-overlay">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3 id="confirmModalTitle" class="modal-title" style="color: var(--verdict-red);">تأكيد الإجراء الخطير</h3>
+        <button type="button" class="modal-close-btn" id="btnCloseConfirmModal">&times;</button>
+      </div>
+      <div class="banner-danger" id="confirmModalWarning"></div>
+      <p id="confirmModalPrompt" class="mb-2"></p>
+      <div class="form-group">
+        <input type="text" id="confirmWordInput" class="form-input" autocomplete="off" placeholder="اكتب كلمة التأكيد هنا">
+        <div id="confirmWordError" class="form-error" data-i18n="error_confirm_mismatch">الكلمة المكتوبة غير مطابقة.</div>
+      </div>
+      <button id="btnExecuteConfirmedAction" class="btn btn-danger btn-block">تنفيذ الإجراء</button>
+    </div>
+  </div>
+
+  <!-- ==========================================================================
+       JAVASCRIPT IMPLEMENTATION
+       ========================================================================== -->
+  <script>
+    /* ==========================================================================
+       SECTION 1: CONSTANTS & TEST VECTORS
+       ========================================================================== */
+    const STORAGE_KEYSTORE = 'driveflow_keystore';
+    const STORAGE_LEDGER = 'driveflow_ledger';
+    const STORAGE_SETTINGS = 'driveflow_settings';
+    const EPOCH_UTC = Date.UTC(2024, 0, 1); // 2024-01-01 00:00:00 UTC
+
+    // Test vectors from License Contract (TEST KEYS ONLY, NEVER USE IN PRODUCTION)
+    const TEST_VECTORS = {
+      testPublicKeySpkiB64: "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEoGjsZvNDUPlp8yESZA8nwEq/G4ASQ8+PWaOe1fYBDDgZpYbxfXmgyFCasIxNkXw1RLS2JyHoIdjYuaVyn6YkMA==",
+      testPrivateKeyPkcs8B64: "MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgN5+lCNmM39QkdOnKTbh0s6DDu8cRLmL5Ro2Tj86ctzGhRANCAASgaOxm80NQ+WnzIRJkDyfASr8bgBJDz49Zo57V9gEMOBmlhvF9eaDIUJqwjE2RfDVEtLYnIegh2Ni5pXKfpiQw",
+      deviceIdHex: "0123456789abcdef0123456789abcdef",
+      todayDay: 1020, // Pretend today is 2026-10-17
+      vectors: [
+        {
+          id: "valid_paid_30d",
+          name_ar: "مفتاح مدفوع صالح 30 يوماً",
+          token: "DF1.AQED_AQaASNFZ4mrze8BI0VniavN7zV1F9cXcT8z5VOtBQUpzYNJ6KepHaIGEMhOWNiyNSGHfFPAzqePAM8cI8DnLjNlnbVqJljRMUipJ7i4kSKl4vo",
+          expected: "OK",
+          expectedPlan: 1,
+          expectedExpiresDay: 1050
+        },
+        {
+          id: "valid_trial_2d",
+          name_ar: "مفتاح تجريبي صالح يومان",
+          token: "DF1.AQID_AP-ASNFZ4mrze8BI0VniavN70ZX4JPeC432UdJyi-_l86TS6BQx2MIbGSpffpmcGrw89-UNi2byH8DmcH2wmHrcRmrQJte2dNePEjBiKI7L4P0",
+          expected: "OK",
+          expectedPlan: 2,
+          expectedExpiresDay: 1022
+        },
+        {
+          id: "expired",
+          name_ar: "مفتاح منتهي الصلاحية",
+          token: "DF1.AQED1AP7ASNFZ4mrze8BI0VniavN7xge78VdY9Oqn3AJZ5krSEt6HwLzWArTo94sMH3VBQsAFiTffDPOWmppHsLn0gGZ0uFT4aZFhF0ykuyrLU2CPPY",
+          expected: "EXPIRED",
+          expectedExpiresDay: 1019
+        },
+        {
+          id: "wrong_device_token",
+          name_ar: "مفتاح لجهاز مختلف",
+          token: "DF1.AQED_AQa_ty6mHZUMhD-3LqYdlQyEOb58b_BbQFo_tYrjCsExxvJ_BFT4vwm4yQDRmtIDPvkUSrtAszmWxBA4zr3IvYCTFGpqMwNIj_ShKq725ugnCo",
+          expected: "WRONG_DEVICE",
+          checkDevice: true
+        },
+        {
+          id: "tampered_signature",
+          name_ar: "توقيع تم التلاعب به",
+          token: "DF1.AQED_AQaASNFZ4mrze8BI0VniavN7zV1F9cXcT8z5VOtBQUpzYNJ6KepHaIGEMhOWNiyNSGHfFPAzqePAM8cI8DnLjNlnbVqJljRMUipJ7i4kSKl4vs",
+          expected: "BAD_SIGNATURE"
+        }
+      ]
+    };
+
+    /* ==========================================================================
+       SECTION 2: I18N STRINGS (ARABIC & ENGLISH)
+       ========================================================================== */
+    const I18N = {
+      ar: {
+        app_title: "DriveFlow Key Tool",
+        app_subtitle: "أداة المالك لإصدار مفاتيح التفعيل دون اتصال",
+        status_unlocked: "مفتوح",
+        status_locked: "مقفل",
+        nav_keys: "المفاتيح",
+        nav_issue: "إصدار",
+        nav_customers: "العملاء",
+        nav_verify: "فحص",
+        nav_settings: "الإعدادات",
+        setup_heading: "إعداد زوج المفاتيح (ECDSA P-256)",
+        setup_no_key_title: "لم يتم إنشاء مفاتيح بعد!",
+        setup_no_key_desc: "يجب إنشاء زوج مفاتيح وتعيين كلمة مرور لحمايته قبل البدء في إصدار المفاتيح.",
+        warning_title: "تنبيه حرج جداً:",
+        setup_warning_text: "بدون النسخة الاحتياطية، إذا تم مسح بيانات المتصفح فلن تتمكن من إصدار مفاتيح تقبلها التطبيقات القديمة، وإنشاء زوج مفاتيح جديد يجعل كل مفتاح بعته يتوقف عن العمل في التطبيقات المبنية بالمفتاح العام القديم.",
+        btn_create_key_pair: "إنشاء زوج مفاتيح جديد",
+        lbl_public_key: "المفتاح العام (SPKI Base64):",
+        public_key_hint: "انسخ هذا المفتاح والصقه في خصائص بناء التطبيق LICENSE_PUBLIC_KEY:",
+        btn_copy_public_key: "نسخ المفتاح العام",
+        lbl_backup_restore: "النسخ الاحتياطي والاستعادة:",
+        btn_backup_keys: "تحميل نسخة احتياطية (JSON)",
+        btn_restore_keys: "استعادة من ملف",
+        btn_regenerate: "إعادة إنشاء المفتاح (خطر)",
+        issue_heading: "إصدار مفتاح اشتراك جديد",
+        issue_locked_msg: "الأداة مقفلة. يرجى إدخال كلمة المرور لفك القفل قبل التمكن من التوقيع على المفاتيح.",
+        btn_unlock_now: "فك القفل الآن",
+        lbl_customer_name: "اسم السائق:",
+        lbl_customer_phone: "رقم الواتساب:",
+        phone_hint: "يقبل أي صيغة مصرية، وسيتم تحويله للصيغة الدولية تلقائياً.",
+        lbl_device_code: "كود الجهاز (32 حرف هكس):",
+        error_device_code: "يجب إدخال 32 حرف هكس صالحين (0-9, A-F).",
+        device_code_hint: "يقبل الكود بحروف كبيرة أو صغيرة، مع فواصل أو بدون.",
+        renewal_found_title: "هذا الجهاز مسجل بالفعل في السجل!",
+        chk_extend_from_expiry: "تمديد الصلاحية من تاريخ الانتهاء الحالي بدلاً من اليوم",
+        lbl_plan_type: "نوع الاشتراك:",
+        plan_paid: "مدفوع (Paid)",
+        plan_trial: "تجريبي (Trial)",
+        lbl_duration: "مدة الاشتراك:",
+        unit_days: "يوم",
+        duration_custom: "مدة مخصصة",
+        lbl_amount: "المبلغ المدفوع (ج.م):",
+        lbl_pay_method: "طريقة الدفع:",
+        pay_cash: "كاش (نقدي)",
+        pay_other: "أخرى",
+        lbl_note: "ملاحظات إضافية (اختياري):",
+        btn_generate_key: "توليد وتوقيع مفتاح التفعيل",
+        key_generated_success: "تم إصدار المفتاح وحفظه بنجاح!",
+        lbl_generated_token: "كود التفعيل (DF1 Token):",
+        btn_copy: "نسخ الكود",
+        btn_send_whatsapp: "إرسال عبر واتساب",
+        btn_share: "مشاركة",
+        stat_active_customers: "العملاء النشطون",
+        stat_expiring_soon: "ينتهي خلال 3 أيام",
+        stat_month_income: "دخل الشهر الحالي",
+        stat_total_income: "إجمالي الدخل",
+        customers_heading: "سجل المشتركين (Ledger)",
+        verify_heading: "التحقق من مفتاح وفحصه",
+        lbl_paste_key: "الصق كود التفعيل هنا (DF1...):",
+        lbl_verify_device_code: "كود الجهاز للمقارنة (اختياري):",
+        btn_verify_now: "فحص المفتاح",
+        lbl_plan: "الخطة:",
+        lbl_issue_date: "تاريخ الإصدار:",
+        lbl_expiry_date: "تاريخ الانتهاء:",
+        lbl_token_device_id: "كود الجهاز المدمج:",
+        lbl_device_match: "مطابقة كود الجهاز:",
+        selftest_heading: "فحص النظام واختبار المتجهات (Self-Test)",
+        selftest_desc: "يقوم هذا الاختبار بفحص صحة التشفير ومطابقة التوقيع والتحقق رسمياً مع متجهات الاختبار المعيارية لـ DriveFlow.",
+        btn_run_tests: "تشغيل متجهات الاختبار (Run Test Vectors)",
+        settings_owner_heading: "بيانات المالك وقوالب الرسائل",
+        lbl_owner_whatsapp: "رقم واتساب المالك:",
+        lbl_owner_instapay: "حساب إنستاباي للدفع:",
+        lbl_price_text: "نص الأسعار الافتراضي:",
+        lbl_tpl_key: "قالب رسالة إرسال المفتاح (واتساب):",
+        lbl_tpl_reminder: "قالب رسالة التذكير بالتجديد:",
+        btn_save_settings: "حفظ الإعدادات",
+        security_heading: "أمان الأداة",
+        btn_change_passphrase: "تغيير كلمة المرور",
+        btn_clear_all_data: "مسح جميع البيانات والمفاتيح",
+        modal_unlock_title: "فك قفل الأداة",
+        modal_unlock_prompt: "أدخل كلمة المرور لفك تشفير المفتاح الخاص وتوقيع المفاتيح:",
+        btn_unlock: "فك القفل",
+        error_wrong_passphrase: "كلمة المرور غير صحيحة، يرجى المحاولة ثانية.",
+        modal_setpass_title: "تعيين كلمة مرور للمفتاح",
+        modal_setpass_desc: "اختر كلمة مرور قوية (8 أحرف على الأقل) لتشفير وحفظ المفتاح الخاص محلياً:",
+        lbl_new_passphrase: "كلمة المرور الجديدة:",
+        lbl_confirm_passphrase: "تأكيد كلمة المرور:",
+        btn_save_encrypt: "تشفير وحفظ المفتاح",
+        error_confirm_mismatch: "الكلمة المكتوبة غير مطابقة."
+      },
+      en: {
+        app_title: "DriveFlow Key Tool",
+        app_subtitle: "Owner offline subscription key issuing tool",
+        status_unlocked: "Unlocked",
+        status_locked: "Locked",
+        nav_keys: "Keys",
+        nav_issue: "Issue",
+        nav_customers: "Customers",
+        nav_verify: "Verify",
+        nav_settings: "Settings",
+        setup_heading: "Key Pair Setup (ECDSA P-256)",
+        setup_no_key_title: "No Keys Found!",
+        setup_no_key_desc: "You must create a key pair and secure it with a passphrase before issuing keys.",
+        warning_title: "Critical Warning:",
+        setup_warning_text: "Without the backup, if browser data is cleared you can no longer issue keys that old apps accept, and generating a new pair makes every key you already sold stop working in apps built with the old public key.",
+        btn_create_key_pair: "Generate New Key Pair",
+        lbl_public_key: "Public Key (SPKI Base64):",
+        public_key_hint: "Copy this key and paste into the app's build property LICENSE_PUBLIC_KEY:",
+        btn_copy_public_key: "Copy Public Key",
+        lbl_backup_restore: "Backup & Restore:",
+        btn_backup_keys: "Download Backup (JSON)",
+        btn_restore_keys: "Restore from File",
+        btn_regenerate: "Regenerate Keys (Dangerous)",
+        issue_heading: "Issue New Subscription Key",
+        issue_locked_msg: "Tool is locked. Enter your passphrase to unlock and sign keys.",
+        btn_unlock_now: "Unlock Now",
+        lbl_customer_name: "Customer Name:",
+        lbl_customer_phone: "WhatsApp Number:",
+        phone_hint: "Accepts any Egyptian format, normalized to international 2011...",
+        lbl_device_code: "Device Code (32 hex characters):",
+        error_device_code: "Must be exactly 32 valid hex characters (0-9, A-F).",
+        device_code_hint: "Accepts uppercase, lowercase, with or without dashes.",
+        renewal_found_title: "This device is already in the ledger!",
+        chk_extend_from_expiry: "Extend expiry from current end date rather than today",
+        lbl_plan_type: "Plan:",
+        plan_paid: "Paid",
+        plan_trial: "Trial",
+        lbl_duration: "Duration:",
+        unit_days: "days",
+        duration_custom: "Custom Duration",
+        lbl_amount: "Amount Paid (EGP):",
+        lbl_pay_method: "Payment Method:",
+        pay_cash: "Cash",
+        pay_other: "Other",
+        lbl_note: "Additional Notes (optional):",
+        btn_generate_key: "Generate & Sign License Key",
+        key_generated_success: "Key issued and saved to ledger successfully!",
+        lbl_generated_token: "License Token (DF1):",
+        btn_copy: "Copy Key",
+        btn_send_whatsapp: "Send on WhatsApp",
+        btn_share: "Share",
+        stat_active_customers: "Active Customers",
+        stat_expiring_soon: "Expiring in 3 Days",
+        stat_month_income: "Income This Month",
+        stat_total_income: "Total Income",
+        customers_heading: "Customer Ledger",
+        verify_heading: "Verify & Inspect Key",
+        lbl_paste_key: "Paste Token here (DF1...):",
+        lbl_verify_device_code: "Device Code to Match (optional):",
+        btn_verify_now: "Verify Key",
+        lbl_plan: "Plan:",
+        lbl_issue_date: "Issued Date:",
+        lbl_expiry_date: "Expires Date:",
+        lbl_token_device_id: "Embedded Device ID:",
+        lbl_device_match: "Device Match:",
+        selftest_heading: "System Verification & Test Vectors",
+        selftest_desc: "Verifies the cryptographic algorithms, signature compliance and standard DriveFlow test vectors.",
+        btn_run_tests: "Run Test Vectors",
+        settings_owner_heading: "Owner Details & Message Templates",
+        lbl_owner_whatsapp: "Owner WhatsApp:",
+        lbl_owner_instapay: "Owner InstaPay:",
+        lbl_price_text: "Price Text:",
+        lbl_tpl_key: "Key Dispatch WhatsApp Template:",
+        lbl_tpl_reminder: "Renewal Reminder WhatsApp Template:",
+        btn_save_settings: "Save Settings",
+        security_heading: "Security",
+        btn_change_passphrase: "Change Passphrase",
+        btn_clear_all_data: "Clear All Data & Keys",
+        modal_unlock_title: "Unlock Key Tool",
+        modal_unlock_prompt: "Enter your passphrase to decrypt private key and enable signing:",
+        btn_unlock: "Unlock",
+        error_wrong_passphrase: "Incorrect passphrase. Please try again.",
+        modal_setpass_title: "Set Key Passphrase",
+        modal_setpass_desc: "Choose a strong passphrase (minimum 8 characters) to encrypt your private key locally:",
+        lbl_new_passphrase: "New Passphrase:",
+        lbl_confirm_passphrase: "Confirm Passphrase:",
+        btn_save_encrypt: "Encrypt & Save Key",
+        error_confirm_mismatch: "Typed confirmation does not match."
+      }
+    };
+
+    let currentLang = 'ar';
+
+    /* ==========================================================================
+       SECTION 3: STATE & STORAGE MANAGEMENT
+       ========================================================================== */
+    let activePrivateKey = null; // Decrypted CryptoKey in memory, never persisted
+    let activePublicKeySpkiB64 = null;
+    let pendingKeyToEncrypt = null; // Temporary when generating or changing passphrase
+    let confirmActionCallback = null;
+
+    const DEFAULT_SETTINGS = {
+      ownerWhatsApp: "201128440045",
+      ownerInstaPay: "01122104999",
+      priceText: "30 يوماً: 150 ج.م / 90 يوماً: 400 ج.م",
+      lang: "ar",
+      tplKeyMsg: "مرحباً {name}،\nشكراً لثقتك في DriveFlow! تم تفعيل اشتراكك بنجاح.\n\nتفاصيل الاشتراك:\n- النوع: {plan}\n- الصلاحية حتى: {expiry} (شامل)\n- كود الجهاز: {device}\n\nكود التفعيل الخاص بك:\n{key}\n\nخطوات التفعيل في 3 خطوات بسيطة:\n1. افتح تطبيق DriveFlow Driver\n2. ادخل على صفحة الاشتراك\n3. الصق كود التفعيل أعلاه واضغط تفعيل",
+      tplReminder: "مرحباً {name}، نود تذكيرك بأن اشتراكك في DriveFlow Driver ينتهي بعد {days_left} أيام (تاريخ {expiry}).\nللتجديد، يرجى تحويل قيمة الاشتراك عبر إنستاباي إلى {instapay} وإرسال لقطة الشاشة هنا على واتساب."
+    };
+
+    function getSettings() {
+      try {
+        const raw = localStorage.getItem(STORAGE_SETTINGS);
+        if (raw) return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw));
+      } catch (e) {}
+      return Object.assign({}, DEFAULT_SETTINGS);
+    }
+
+    function saveSettings(settings) {
+      localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(settings));
+    }
+
+    function getKeystore() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYSTORE);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return null;
+    }
+
+    function saveKeystore(data) {
+      localStorage.setItem(STORAGE_KEYSTORE, JSON.stringify(data));
+    }
+
+    function getLedger() {
+      try {
+        const raw = localStorage.getItem(STORAGE_LEDGER);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return [];
+    }
+
+    function saveLedger(ledger) {
+      localStorage.setItem(STORAGE_LEDGER, JSON.stringify(ledger));
+    }
+
+    /* ==========================================================================
+       SECTION 4: ENCODING & CRYPTOGRAPHIC HELPERS (WebCrypto ONLY)
+       ========================================================================== */
+    function base64ToBytes(b64) {
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      return bytes;
+    }
+
+    function bytesToBase64(bytes) {
+      let bin = '';
+      const len = bytes.byteLength;
+      for (let i = 0; i < len; i++) bin += String.fromCharCode(bytes[i]);
+      return btoa(bin);
+    }
+
+    function bytesToBase64Url(bytes) {
+      return bytesToBase64(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    }
+
+    function base64UrlToBytes(b64url) {
+      let b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4 !== 0) b64 += '=';
+      return base64ToBytes(b64);
+    }
+
+    function hexToBytes(hex) {
+      const clean = hex.replace(/[\s-]/g, '').toLowerCase();
+      if (clean.length !== 32 || !/^[0-9a-f]{32}$/.test(clean)) return null;
+      const bytes = new Uint8Array(16);
+      for (let i = 0; i < 16; i++) {
+        bytes[i] = parseInt(clean.substr(i * 2, 2), 16);
+      }
+      return bytes;
+    }
+
+    function bytesToHex(bytes) {
+      return Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    function formatDeviceCode(hexOrClean) {
+      const clean = hexOrClean.replace(/[\s-]/g, '').toUpperCase();
+      if (clean.length !== 32) return clean;
+      const parts = [];
+      for (let i = 0; i < 32; i += 4) {
+        parts.push(clean.substr(i, 4));
+      }
+      return parts.join('-');
+    }
+
+    function normalizeEgyptianPhone(input) {
+      if (!input) return "";
+      let p = input.replace(/[\s\-\(\)\+]/g, '');
+      if (p.startsWith('0020')) p = p.substring(2);
+      if (p.startsWith('01') && p.length === 11) p = '20' + p.substring(1);
+      if (p.startsWith('1') && p.length === 10) p = '20' + p;
+      if (!p.startsWith('20') && p.length === 11 && p.startsWith('0')) p = '20' + p.substring(1);
+      return p;
+    }
+
+    // Days since 2024-01-01 00:00:00 UTC
+    function getTodayUtcDay() {
+      return Math.floor((Date.now() - EPOCH_UTC) / 86400000);
+    }
+
+    function utcDayToDate(dayNumber) {
+      return new Date(EPOCH_UTC + dayNumber * 86400000);
+    }
+
+    function formatDateUtc(dayNumber) {
+      const d = utcDayToDate(dayNumber);
+      const y = d.getUTCFullYear();
+      const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(d.getUTCDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+
+    /* Key Encryption & Decryption using PBKDF2 (250k iterations) + AES-GCM */
+    async function deriveAesKey(passphrase, saltBytes) {
+      const enc = new TextEncoder();
+      const baseKey = await crypto.subtle.importKey(
+        "raw",
+        enc.encode(passphrase),
+        { name: "PBKDF2" },
+        false,
+        ["deriveKey"]
+      );
+
+      return await crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: saltBytes,
+          iterations: 250000,
+          hash: "SHA-256"
+        },
+        baseKey,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt", "decrypt"]
+      );
+    }
+
+    async function encryptPrivateKey(pkcs8Bytes, passphrase) {
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const aesKey = await deriveAesKey(passphrase, salt);
+
+      const ciphertextBuffer = await crypto.subtle.encrypt(
+        { name: "AES-GCM", iv },
+        aesKey,
+        pkcs8Bytes
+      );
+
+      return {
+        saltB64: bytesToBase64(salt),
+        ivB64: bytesToBase64(iv),
+        ciphertextB64: bytesToBase64(new Uint8Array(ciphertextBuffer))
+      };
+    }
+
+    async function decryptPrivateKey(keystore, passphrase) {
+      const salt = base64ToBytes(keystore.saltB64);
+      const iv = base64ToBytes(keystore.ivB64);
+      const ciphertext = base64ToBytes(keystore.ciphertextB64);
+
+      const aesKey = await deriveAesKey(passphrase, salt);
+      const decryptedBuffer = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv },
+        aesKey,
+        ciphertext
+      );
+
+      return await crypto.subtle.importKey(
+        "pkcs8",
+        decryptedBuffer,
+        { name: "ECDSA", namedCurve: "P-256" },
+        false,
+        ["sign"]
+      );
+    }
+
+    /* Build 22-byte payload per License Contract */
+    function buildPayloadBytes(plan, issuedDay, expiresDay, deviceIdHex) {
+      const devBytes = hexToBytes(deviceIdHex);
+      if (!devBytes || devBytes.length !== 16) throw new Error("Invalid device ID hex");
+
+      const payload = new Uint8Array(22);
+      const view = new DataView(payload.buffer);
+      view.setUint8(0, 1); // Byte 0 = version (1)
+      view.setUint8(1, plan); // Byte 1 = plan (1 = paid, 2 = trial)
+      view.setUint16(2, issuedDay, false); // Bytes 2-3 = issuedDay (uint16 big-endian)
+      view.setUint16(4, expiresDay, false); // Bytes 4-5 = expiresDay (uint16 big-endian)
+      payload.set(devBytes, 6); // Bytes 6-21 = 16 bytes of deviceId
+      return payload;
+    }
+
+    /* Sign payload with active ECDSA P-256 key */
+    async function signPayload(payloadBytes, privateKey) {
+      const sigBuffer = await crypto.subtle.sign(
+        { name: "ECDSA", hash: { name: "SHA-256" } },
+        privateKey,
+        payloadBytes
+      );
+      // WebCrypto returns IEEE P1363 raw r||s (64 bytes: 32 bytes r + 32 bytes s)
+      const sigBytes = new Uint8Array(sigBuffer);
+      if (sigBytes.length !== 64) throw new Error("Unexpected signature length: " + sigBytes.length);
+
+      const totalBytes = new Uint8Array(86);
+      totalBytes.set(payloadBytes, 0);
+      totalBytes.set(sigBytes, 22);
+
+      return "DF1." + bytesToBase64Url(totalBytes);
+    }
+
+    /* Verify Token according to contract item 5 */
+    async function verifyToken(tokenString, publicKeySpkiB64, expectedDeviceHex = null, customTodayDay = null) {
+      // 1. Remove spaces and line breaks
+      const cleanToken = tokenString.replace(/\s+/g, '');
+      if (!cleanToken.startsWith("DF1.")) {
+        return { valid: false, code: "BAD_FORMAT", desc: "Token must start with 'DF1.'" };
+      }
+
+      const b64url = cleanToken.substring(4);
+      let tokenBytes;
+      try {
+        tokenBytes = base64UrlToBytes(b64url);
+      } catch (e) {
+        return { valid: false, code: "BAD_FORMAT", desc: "Base64URL decode failed" };
+      }
+
+      if (tokenBytes.length !== 86) {
+        return { valid: false, code: "BAD_FORMAT", desc: `Invalid length: expected 86 bytes, got ${tokenBytes.length}` };
+      }
+
+      // Check version (byte 0 must be 1)
+      const payloadBytes = tokenBytes.slice(0, 22);
+      const signatureBytes = tokenBytes.slice(22, 86);
+      const view = new DataView(payloadBytes.buffer, payloadBytes.byteOffset, 22);
+
+      if (view.getUint8(0) !== 1) {
+        return { valid: false, code: "BAD_FORMAT", desc: "Byte 0 version must be 1" };
+      }
+
+      const plan = view.getUint8(1);
+      const issuedDay = view.getUint16(2, false);
+      const expiresDay = view.getUint16(4, false);
+      const deviceIdBytes = payloadBytes.slice(6, 22);
+      const deviceIdHex = bytesToHex(deviceIdBytes);
+
+      // Verify signature
+      let pubKey;
+      try {
+        const pubKeyBytes = base64ToBytes(publicKeySpkiB64);
+        pubKey = await crypto.subtle.importKey(
+          "spki",
+          pubKeyBytes,
+          { name: "ECDSA", namedCurve: "P-256" },
+          false,
+          ["verify"]
+        );
+      } catch (e) {
+        return { valid: false, code: "BAD_PUBLIC_KEY", desc: "Public key import failed" };
+      }
+
+      const isSigValid = await crypto.subtle.verify(
+        { name: "ECDSA", hash: { name: "SHA-256" } },
+        pubKey,
+        signatureBytes,
+        payloadBytes
+      );
+
+      if (!isSigValid) {
+        return { valid: false, code: "BAD_SIGNATURE", desc: "Cryptographic signature verification failed" };
+      }
+
+      // Device match check
+      if (expectedDeviceHex) {
+        const cleanExpected = expectedDeviceHex.replace(/[\s-]/g, '').toLowerCase();
+        if (cleanExpected.length === 32 && cleanExpected !== deviceIdHex) {
+          return {
+            valid: false,
+            code: "WRONG_DEVICE",
+            desc: "Token is signed for a different device",
+            plan, issuedDay, expiresDay, deviceIdHex
+          };
+        }
+      }
+
+      const effectiveDay = customTodayDay !== null ? customTodayDay : getTodayUtcDay();
+      if (issuedDay > effectiveDay + 1) {
+        return {
+          valid: false,
+          code: "NOT_YET_VALID",
+          desc: "Key is not yet valid",
+          plan, issuedDay, expiresDay, deviceIdHex
+        };
+      }
+
+      if (effectiveDay > expiresDay) {
+        return {
+          valid: false,
+          code: "EXPIRED",
+          desc: "Subscription has expired",
+          plan, issuedDay, expiresDay, deviceIdHex
+        };
+      }
+
+      return {
+        valid: true,
+        code: "OK",
+        desc: "Key is valid and active",
+        plan, issuedDay, expiresDay, deviceIdHex
+      };
+    }
+
+    /* ==========================================================================
+       SECTION 5: UI CONTROLLER & EVENT WIRING
+       ========================================================================== */
+    function setLanguage(lang) {
+      currentLang = lang;
+      document.documentElement.lang = lang;
+      document.documentElement.dir = (lang === 'ar' ? 'rtl' : 'ltr');
+      document.body.dir = (lang === 'ar' ? 'rtl' : 'ltr');
+
+      // Update static data-i18n elements
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (I18N[lang] && I18N[lang][key]) {
+          el.textContent = I18N[lang][key];
+        }
+      });
+
+      const btnLang = document.getElementById('btnLangToggle');
+      if (btnLang) btnLang.textContent = (lang === 'ar' ? 'English' : 'عربي');
+
+      // Update lock status text
+      updateLockStatusUI();
+      renderCustomerList();
+    }
+
+    function updateLockStatusUI() {
+      const btn = document.getElementById('btnLockToggle');
+      const icon = document.getElementById('lockStatusIcon');
+      const text = document.getElementById('lockStatusText');
+      const issueNotice = document.getElementById('issueLockedNotice');
+
+      if (activePrivateKey) {
+        btn.className = 'lock-status-badge unlocked';
+        icon.textContent = '🔓';
+        text.textContent = I18N[currentLang].status_unlocked;
+        if (issueNotice) issueNotice.style.display = 'none';
+      } else {
+        btn.className = 'lock-status-badge locked';
+        icon.textContent = '🔒';
+        text.textContent = I18N[currentLang].status_locked;
+        if (issueNotice) issueNotice.style.display = 'block';
+      }
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+
+      const targetTab = document.getElementById(tabId);
+      if (targetTab) targetTab.classList.add('active');
+
+      const targetNav = document.querySelector(`.nav-btn[data-target="${tabId}"]`);
+      if (targetNav) targetNav.classList.add('active');
+
+      window.scrollTo(0, 0);
+
+      if (tabId === 'tab-customers') {
+        renderCustomerList();
+      }
+    }
+
+    /* Modal helpers */
+    function openModal(id) {
+      const m = document.getElementById(id);
+      if (m) m.classList.add('active');
+    }
+
+    function closeModal(id) {
+      const m = document.getElementById(id);
+      if (m) m.classList.remove('active');
+    }
+
+    function promptUnlock(callbackOnSuccess) {
+      if (activePrivateKey) {
+        if (callbackOnSuccess) callbackOnSuccess();
+        return;
+      }
+      const keystore = getKeystore();
+      if (!keystore) {
+        switchTab('tab-setup');
+        return;
+      }
+
+      openModal('modalUnlock');
+      const input = document.getElementById('inputPassphrase');
+      const err = document.getElementById('unlockError');
+      err.classList.remove('visible');
+      input.value = '';
+      input.focus();
+
+      const btnSubmit = document.getElementById('btnSubmitUnlock');
+      const handler = async () => {
+        const pass = input.value;
+        if (!pass) return;
+        try {
+          btnSubmit.disabled = true;
+          activePrivateKey = await decryptPrivateKey(keystore, pass);
+          activePublicKeySpkiB64 = keystore.publicKeySpki;
+          updateLockStatusUI();
+          closeModal('modalUnlock');
+          btnSubmit.removeEventListener('click', handler);
+          if (callbackOnSuccess) callbackOnSuccess();
+        } catch (e) {
+          err.classList.add('visible');
+        } finally {
+          btnSubmit.disabled = false;
+        }
+      };
+
+      // Ensure clean handler attachment
+      const newBtn = btnSubmit.cloneNode(true);
+      btnSubmit.parentNode.replaceChild(newBtn, btnSubmit);
+      newBtn.addEventListener('click', handler);
+    }
+
+    /* ==========================================================================
+       SECTION 6: SETUP & KEY GENERATION
+       ========================================================================== */
+    async function initKeysUI() {
+      const keystore = getKeystore();
+      const noKeyBanner = document.getElementById('setupNoKeyBanner');
+      const createSec = document.getElementById('createKeySection');
+      const pubSec = document.getElementById('publicKeyDisplaySection');
+      const pubText = document.getElementById('publicKeyText');
+
+      if (keystore && keystore.publicKeySpki) {
+        activePublicKeySpkiB64 = keystore.publicKeySpki;
+        if (noKeyBanner) noKeyBanner.style.display = 'none';
+        if (createSec) createSec.style.display = 'none';
+        if (pubSec) pubSec.style.display = 'block';
+        if (pubText) pubText.textContent = keystore.publicKeySpki;
+      } else {
+        if (noKeyBanner) noKeyBanner.style.display = 'block';
+        if (createSec) createSec.style.display = 'block';
+        if (pubSec) pubSec.style.display = 'none';
+        switchTab('tab-setup');
+      }
+      updateLockStatusUI();
+    }
+
+    async function handleGenerateNewKeyPair() {
+      try {
+        const keyPair = await crypto.subtle.generateKey(
+          { name: "ECDSA", namedCurve: "P-256" },
+          true,
+          ["sign", "verify"]
+        );
+
+        const spkiBuffer = await crypto.subtle.exportKey("spki", keyPair.publicKey);
+        const pkcs8Buffer = await crypto.subtle.exportKey("pkcs8", keyPair.privateKey);
+
+        pendingKeyToEncrypt = {
+          spkiB64: bytesToBase64(new Uint8Array(spkiBuffer)),
+          pkcs8Bytes: new Uint8Array(pkcs8Buffer)
+        };
+
+        openModal('modalSetPass');
+        document.getElementById('inputSetPass1').value = '';
+        document.getElementById('inputSetPass2').value = '';
+        document.getElementById('setPassError').classList.remove('visible');
+      } catch (e) {
+        alert("Key generation error: " + e.message);
+      }
+    }
+
+    /* ==========================================================================
+       SECTION 7: ISSUE KEY LOGIC
+       ========================================================================== */
+    function checkDeviceCodeInLedger(cleanHex) {
+      if (!cleanHex || cleanHex.length !== 32) return null;
+      const ledger = getLedger();
+      const today = getTodayUtcDay();
+      const found = ledger.find(c => c.deviceId.toLowerCase() === cleanHex.toLowerCase());
+      if (!found) return null;
+
+      const isNotExpired = found.expiresDay >= today;
+      return { customer: found, isNotExpired };
+    }
+
+    function updateRenewalBanner() {
+      const devInput = document.getElementById('deviceCodeInput');
+      const rawHex = devInput.value.replace(/[\s-]/g, '').toLowerCase();
+      const banner = document.getElementById('renewalBanner');
+      const details = document.getElementById('renewalFoundDetails');
+
+      if (rawHex.length === 32 && /^[0-9a-f]{32}$/.test(rawHex)) {
+        const match = checkDeviceCodeInLedger(rawHex);
+        if (match && match.isNotExpired) {
+          const daysLeft = match.customer.expiresDay - getTodayUtcDay();
+          details.innerHTML = `<strong>${match.customer.name}</strong> - تاريخ الانتهاء الحالي: <strong>${formatDateUtc(match.customer.expiresDay)}</strong> (متبقي ${daysLeft} يوم)`;
+          banner.style.display = 'block';
+          return;
+        }
+      }
+      banner.style.display = 'none';
+    }
+
+    async function onIssueFormSubmit(e) {
+      e.preventDefault();
+
+      const name = document.getElementById('custName').value.trim();
+      const rawPhone = document.getElementById('custPhone').value.trim();
+      const phone = normalizeEgyptianPhone(rawPhone);
+      const rawDevice = document.getElementById('deviceCodeInput').value;
+      const cleanHex = rawDevice.replace(/[\s-]/g, '').toLowerCase();
+      const devError = document.getElementById('deviceCodeError');
+
+      if (cleanHex.length !== 32 || !/^[0-9a-f]{32}$/.test(cleanHex)) {
+        devError.classList.add('visible');
+        return;
+      }
+      devError.classList.remove('visible');
+
+      // Check key lock state
+      if (!activePrivateKey) {
+        promptUnlock(() => {
+          document.getElementById('btnGenerateKey').click();
+        });
+        return;
+      }
+
+      // Plan selection
+      const activePlanChip = document.querySelector('.chip-btn[data-plan].active');
+      const plan = activePlanChip ? parseInt(activePlanChip.getAttribute('data-plan'), 10) : 1;
+
+      // Duration
+      let days = 30;
+      const activeDurationChip = document.querySelector('#durationChips .chip-btn.active');
+      if (activeDurationChip) {
+        const val = activeDurationChip.getAttribute('data-days');
+        if (val === 'custom') {
+          days = parseInt(document.getElementById('customDaysInput').value, 10) || 30;
+        } else {
+          days = parseInt(val, 10);
+        }
+      }
+
+      // Check dates per License Contract
+      const todayDay = getTodayUtcDay();
+      const issuedDay = todayDay;
+      let expiresDay = issuedDay + days;
+
+      // Renewal check
+      const match = checkDeviceCodeInLedger(cleanHex);
+      const chkExtend = document.getElementById('chkExtendExpiry');
+      if (match && match.isNotExpired && chkExtend && chkExtend.checked) {
+        expiresDay = match.customer.expiresDay + days;
+      }
+
+      try {
+        const payloadBytes = buildPayloadBytes(plan, issuedDay, expiresDay, cleanHex);
+        const token = await signPayload(payloadBytes, activePrivateKey);
+
+        const amount = parseFloat(document.getElementById('amountPaid').value) || 0;
+        const payMethod = document.getElementById('payMethod').value;
+        const note = document.getElementById('issueNote').value.trim();
+
+        // Save to Ledger automatically
+        const ledger = getLedger();
+        const existingIndex = ledger.findIndex(c => c.deviceId.toLowerCase() === cleanHex);
+        const historyEntry = {
+          date: formatDateUtc(todayDay),
+          token,
+          plan,
+          issuedDay,
+          expiresDay,
+          days,
+          amount,
+          paymentMethod: payMethod,
+          note
+        };
+
+        if (existingIndex >= 0) {
+          const cust = ledger[existingIndex];
+          cust.name = name || cust.name;
+          cust.phone = phone || cust.phone;
+          cust.plan = plan;
+          cust.issuedDay = issuedDay;
+          cust.expiresDay = expiresDay;
+          cust.lastToken = token;
+          cust.amount = amount;
+          cust.paymentMethod = payMethod;
+          cust.note = note || cust.note;
+          if (!cust.history) cust.history = [];
+          cust.history.unshift(historyEntry);
+          ledger[existingIndex] = cust;
+        } else {
+          ledger.unshift({
+            id: 'c_' + Date.now(),
+            name,
+            phone,
+            deviceId: cleanHex,
+            plan,
+            issuedDay,
+            expiresDay,
+            lastToken: token,
+            amount,
+            paymentMethod: payMethod,
+            note,
+            history: [historyEntry],
+            createdAt: new Date().toISOString()
+          });
+        }
+        saveLedger(ledger);
+
+        // Display Generated Key
+        const outSec = document.getElementById('generatedOutputSection');
+        const tokenDisp = document.getElementById('generatedTokenDisplay');
+        const metaInfo = document.getElementById('tokenMetaInfo');
+
+        tokenDisp.textContent = token;
+        const formattedDev = formatDeviceCode(cleanHex);
+        const expiryDateStr = formatDateUtc(expiresDay);
+        metaInfo.innerHTML = `الخطة: <strong>${plan === 1 ? 'مدفوع' : 'تجريبي'}</strong> | الصلاحية حتى: <strong>${expiryDateStr}</strong> | الجهاز: <code style="direction: ltr;">${formattedDev}</code>`;
+        outSec.style.display = 'block';
+        outSec.scrollIntoView({ behavior: 'smooth' });
+
+        // Wire WhatsApp & Share buttons
+        setupDispatchButtons(name, phone, token, plan, expiryDateStr, formattedDev);
+      } catch (err) {
+        alert("Error generating key: " + err.message);
+      }
+    }
+
+    function setupDispatchButtons(name, phone, token, plan, expiryDateStr, formattedDev) {
+      const btnCopy = document.getElementById('btnCopyGeneratedKey');
+      const btnWa = document.getElementById('btnSendWhatsApp');
+      const btnShare = document.getElementById('btnShareKey');
+      const settings = getSettings();
+
+      const planLabel = plan === 1 ? "مدفوع (Paid)" : "تجريبي (Trial)";
+      const msgText = settings.tplKeyMsg
+        .replace('{name}', name)
+        .replace('{plan}', planLabel)
+        .replace('{expiry}', expiryDateStr)
+        .replace('{device}', formattedDev)
+        .replace('{key}', token);
+
+      btnCopy.onclick = () => {
+        navigator.clipboard.writeText(token).then(() => {
+          btnCopy.classList.add('btn-mint');
+          setTimeout(() => btnCopy.classList.remove('btn-mint'), 1200);
+        });
+      };
+
+      btnWa.onclick = () => {
+        const destPhone = phone || settings.ownerWhatsApp;
+        const url = `https://wa.me/${destPhone}?text=${encodeURIComponent(msgText)}`;
+        window.open(url, '_blank');
+      };
+
+      btnShare.onclick = () => {
+        if (navigator.share) {
+          navigator.share({
+            title: 'DriveFlow Activation Key',
+            text: msgText
+          }).catch(() => {});
+        } else {
+          navigator.clipboard.writeText(msgText).then(() => {
+            alert('تم نسخ تفاصيل المفتاح للحافظة!');
+          });
+        }
+      };
+    }
+
+    /* ==========================================================================
+       SECTION 8: CUSTOMERS LEDGER VIEW
+       ========================================================================== */
+    function renderCustomerList() {
+      const container = document.getElementById('customerListContainer');
+      const search = (document.getElementById('customerSearchInput').value || '').toLowerCase().trim();
+      const ledger = getLedger();
+      const todayDay = getTodayUtcDay();
+
+      // Stats calculation
+      let activeCount = 0;
+      let expiringCount = 0;
+      let totalIncome = 0;
+      let monthIncome = 0;
+      const currentMonthKey = new Date().toISOString().substring(0, 7);
+
+      ledger.forEach(c => {
+        const daysLeft = c.expiresDay - todayDay;
+        if (daysLeft >= 0) {
+          activeCount++;
+          if (daysLeft <= 3) expiringCount++;
+        }
+        totalIncome += (c.amount || 0);
+
+        if (c.history && Array.isArray(c.history)) {
+          c.history.forEach(h => {
+            if (h.date && h.date.startsWith(currentMonthKey)) {
+              monthIncome += (h.amount || 0);
+            }
+          });
+        } else if (c.createdAt && c.createdAt.startsWith(currentMonthKey)) {
+          monthIncome += (c.amount || 0);
+        }
+      });
+
+      document.getElementById('statActiveCount').textContent = activeCount;
+      document.getElementById('statExpiringCount').textContent = expiringCount;
+      document.getElementById('statMonthIncome').textContent = monthIncome + ' ج.م';
+      document.getElementById('statTotalIncome').textContent = totalIncome + ' ج.م';
+
+      // Filtering & Sorting (expiring soonest first)
+      const filtered = ledger.filter(c => {
+        if (!search) return true;
+        return (c.name && c.name.toLowerCase().includes(search)) ||
+               (c.phone && c.phone.includes(search)) ||
+               (c.deviceId && c.deviceId.toLowerCase().includes(search));
+      }).sort((a, b) => a.expiresDay - b.expiresDay);
+
+      container.innerHTML = '';
+      if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 30px;">${currentLang === 'ar' ? 'لا يوجد عملاء مطابقين' : 'No customers found'}</div>`;
+        return;
+      }
+
+      filtered.forEach(c => {
+        const daysLeft = c.expiresDay - todayDay;
+        let statusClass = 'active-status';
+        let statusLabel = currentLang === 'ar' ? 'نشط' : 'ACTIVE';
+
+        if (daysLeft < 0) {
+          statusClass = 'expired-status';
+          statusLabel = currentLang === 'ar' ? 'منتهي' : 'EXPIRED';
+        } else if (daysLeft <= 3) {
+          statusClass = 'expiring-status';
+          statusLabel = currentLang === 'ar' ? `ينتهي (${daysLeft}ي)` : `EXPIRING (${daysLeft}d)`;
+        }
+
+        const item = document.createElement('div');
+        item.className = 'customer-item';
+        item.innerHTML = `
+          <div class="customer-header">
+            <span class="customer-name">${c.name || 'بدون اسم'}</span>
+            <span class="status-chip ${statusClass}">${statusLabel}</span>
+          </div>
+          <div class="customer-meta">
+            <span>📱 ${c.phone || '-'}</span>
+            <span class="customer-device">🔑 ${c.deviceId.substr(0, 8)}...${c.deviceId.substr(24)}</span>
+            <span>📅 ${formatDateUtc(c.expiresDay)}</span>
+            <span>💰 ${c.amount || 0} ج.م</span>
+          </div>
+        `;
+
+        item.addEventListener('click', () => openCustomerDetailsModal(c));
+        container.appendChild(item);
+      });
+    }
+
+    function openCustomerDetailsModal(customer) {
+      const todayDay = getTodayUtcDay();
+      const daysLeft = customer.expiresDay - todayDay;
+      const settings = getSettings();
+
+      document.getElementById('detCustName').textContent = customer.name || 'عميل';
+      document.getElementById('detCustPhone').textContent = customer.phone || '-';
+      document.getElementById('detCustDevice').textContent = formatDeviceCode(customer.deviceId);
+      document.getElementById('detCustExpiry').textContent = formatDateUtc(customer.expiresDay);
+      document.getElementById('detCustDaysLeft').textContent = daysLeft >= 0 ? `${daysLeft} يوم متبقي` : `منتهي منذ ${Math.abs(daysLeft)} يوم`;
+      document.getElementById('detCustNoteInput').value = customer.note || '';
+
+      const statusEl = document.getElementById('detCustStatus');
+      if (daysLeft < 0) {
+        statusEl.innerHTML = '<span class="status-chip expired-status">منتهي (EXPIRED)</span>';
+      } else if (daysLeft <= 3) {
+        statusEl.innerHTML = '<span class="status-chip expiring-status">أوشك على الانتهاء (EXPIRING)</span>';
+      } else {
+        statusEl.innerHTML = '<span class="status-chip active-status">نشط (ACTIVE)</span>';
+      }
+
+      // Render history timeline
+      const histCont = document.getElementById('detHistoryContainer');
+      histCont.innerHTML = '';
+      if (customer.history && customer.history.length > 0) {
+        customer.history.forEach(h => {
+          const div = document.createElement('div');
+          div.className = 'history-item';
+          div.innerHTML = `
+            <div><strong>${h.date}</strong> - ${h.days} يوم (${h.plan === 1 ? 'مدفوع' : 'تجريبي'}) - ${h.amount || 0} ج.م (${h.paymentMethod || 'InstaPay'})</div>
+            <div style="font-family: monospace; font-size: 0.72rem; word-break: break-all; color: var(--gold);">${h.token}</div>
+          `;
+          histCont.appendChild(div);
+        });
+      } else {
+        histCont.innerHTML = '<div style="color: var(--text-muted); font-size: 0.8rem;">لا يوجد سجل سابق</div>';
+      }
+
+      // Renew Shortcut button
+      document.getElementById('btnQuickRenew').onclick = () => {
+        closeModal('modalCustomerDetails');
+        switchTab('tab-issue');
+        document.getElementById('custName').value = customer.name;
+        document.getElementById('custPhone').value = customer.phone;
+        document.getElementById('deviceCodeInput').value = formatDeviceCode(customer.deviceId);
+        updateRenewalBanner();
+      };
+
+      // WhatsApp reminder button
+      document.getElementById('btnSendReminderWhatsApp').onclick = () => {
+        const destPhone = customer.phone || settings.ownerWhatsApp;
+        const msg = settings.tplReminder
+          .replace('{name}', customer.name)
+          .replace('{days_left}', daysLeft)
+          .replace('{expiry}', formatDateUtc(customer.expiresDay))
+          .replace('{instapay}', settings.ownerInstaPay);
+        window.open(`https://wa.me/${destPhone}?text=${encodeURIComponent(msg)}`, '_blank');
+      };
+
+      // Save Note
+      document.getElementById('btnSaveCustNote').onclick = () => {
+        const ledger = getLedger();
+        const idx = ledger.findIndex(x => x.deviceId === customer.deviceId);
+        if (idx >= 0) {
+          ledger[idx].note = document.getElementById('detCustNoteInput').value.trim();
+          saveLedger(ledger);
+          renderCustomerList();
+          alert('تم حفظ الملاحظة!');
+        }
+      };
+
+      // Delete customer
+      document.getElementById('btnDeleteCustomer').onclick = () => {
+        if (confirm(`هل أنت متأكد من حذف العميل "${customer.name}" من السجل؟`)) {
+          let ledger = getLedger();
+          ledger = ledger.filter(x => x.deviceId !== customer.deviceId);
+          saveLedger(ledger);
+          closeModal('modalCustomerDetails');
+          renderCustomerList();
+        }
+      };
+
+      openModal('modalCustomerDetails');
+    }
+
+    /* Export CSV / JSON & Import JSON */
+    function exportLedgerCsv() {
+      const ledger = getLedger();
+      if (ledger.length === 0) return alert('السجل فارغ!');
+      const headers = ["Name", "Phone", "DeviceId", "Plan", "IssuedDate", "ExpiryDate", "Amount", "PaymentMethod", "Note"];
+      const rows = ledger.map(c => [
+        `"${(c.name || '').replace(/"/g, '""')}"`,
+        `"${c.phone || ''}"`,
+        `"${c.deviceId || ''}"`,
+        c.plan === 1 ? "Paid" : "Trial",
+        formatDateUtc(c.issuedDay),
+        formatDateUtc(c.expiresDay),
+        c.amount || 0,
+        `"${c.paymentMethod || ''}"`,
+        `"${(c.note || '').replace(/"/g, '""')}"`
+      ]);
+      const csv = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+      downloadBlob(csv, "driveflow-ledger.csv", "text/csv;charset=utf-8;");
+    }
+
+    function exportLedgerJson() {
+      const ledger = getLedger();
+      const json = JSON.stringify(ledger, null, 2);
+      downloadBlob(json, "driveflow-ledger.json", "application/json");
+    }
+
+    function importLedgerJson(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (!Array.isArray(imported)) throw new Error("Invalid format: expected array");
+          const ledger = getLedger();
+          let count = 0;
+
+          imported.forEach(item => {
+            if (!item.deviceId) return;
+            const idx = ledger.findIndex(x => x.deviceId.toLowerCase() === item.deviceId.toLowerCase());
+            if (idx >= 0) {
+              // Merge if imported has later expiry
+              if (item.expiresDay > ledger[idx].expiresDay) {
+                ledger[idx] = Object.assign({}, ledger[idx], item);
+                count++;
+              }
+            } else {
+              ledger.push(item);
+              count++;
+            }
+          });
+          saveLedger(ledger);
+          renderCustomerList();
+          alert(`تم استيراد ودمج ${count} عميل بنجاح!`);
+        } catch (err) {
+          alert("فشل استيراد الملف: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function downloadBlob(content, filename, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    /* ==========================================================================
+       SECTION 9: TOKEN VERIFICATION (TAB 4)
+       ========================================================================== */
+    async function onVerifyFormSubmit() {
+      const tokenInput = document.getElementById('verifyTokenInput').value.trim();
+      const devCodeInput = document.getElementById('verifyDeviceCodeInput').value.trim();
+      const resultSec = document.getElementById('verifyResultSection');
+      const banner = document.getElementById('verifyStatusBanner');
+
+      if (!tokenInput) return;
+
+      const keystore = getKeystore();
+      const pubKey = (keystore && keystore.publicKeySpki) ? keystore.publicKeySpki : TEST_VECTORS.testPublicKeySpkiB64;
+
+      const res = await verifyToken(tokenInput, pubKey, devCodeInput || null);
+      resultSec.style.display = 'block';
+
+      if (res.valid) {
+        banner.className = 'banner-info';
+        banner.style.borderColor = 'var(--verdict-green)';
+        banner.style.color = 'var(--verdict-green)';
+        banner.innerHTML = `<strong>صالح ومفعل (ACTIVE)</strong> - تم التحقق من صحة التوقيع الرقمي بنجاح.`;
+      } else {
+        banner.className = 'banner-danger';
+        banner.innerHTML = `<strong>فشل التحقق: ${res.code}</strong><br>${res.desc}`;
+      }
+
+      document.getElementById('vPlan').textContent = res.plan ? (res.plan === 1 ? 'مدفوع (Paid - 1)' : 'تجريبي (Trial - 2)') : '-';
+      document.getElementById('vIssued').textContent = res.issuedDay !== undefined ? `${formatDateUtc(res.issuedDay)} (اليوم ${res.issuedDay})` : '-';
+      document.getElementById('vExpiry').textContent = res.expiresDay !== undefined ? `${formatDateUtc(res.expiresDay)} (اليوم ${res.expiresDay})` : '-';
+      document.getElementById('vDevice').textContent = res.deviceIdHex ? formatDeviceCode(res.deviceIdHex) : '-';
+
+      const matchEl = document.getElementById('vDeviceMatch');
+      if (devCodeInput && res.deviceIdHex) {
+        const cleanTyped = devCodeInput.replace(/[\s-]/g, '').toLowerCase();
+        if (cleanTyped === res.deviceIdHex.toLowerCase()) {
+          matchEl.innerHTML = '<span style="color: var(--verdict-green); font-weight: bold;">مطابق تماماً ✓</span>';
+        } else {
+          matchEl.innerHTML = '<span style="color: var(--verdict-red); font-weight: bold;">غير مطابق ✗</span>';
+        }
+      } else {
+        matchEl.textContent = 'لم يتم إدخال كود للمقارنة';
+      }
+    }
+
+    /* ==========================================================================
+       SECTION 10: SELF-TEST & TEST VECTORS (TAB 5)
+       ========================================================================== */
+    async function runSelfTests() {
+      const container = document.getElementById('testVectorsContainer');
+      container.innerHTML = '<div style="color: var(--gold); padding: 10px;">جاري تشغيل متجهات الاختبار...</div>';
+
+      const results = [];
+      const testPubB64 = TEST_VECTORS.testPublicKeySpkiB64;
+      const pretendToday = TEST_VECTORS.todayDay; // 1020
+
+      // Run each vector from the License Contract
+      for (const vec of TEST_VECTORS.vectors) {
+        const devToCheck = vec.checkDevice ? TEST_VECTORS.deviceIdHex : null;
+        const res = await verifyToken(vec.token, testPubB64, devToCheck, pretendToday);
+
+        let pass = false;
+        if (vec.expected === "OK" && res.valid && res.code === "OK") {
+          pass = (res.plan === vec.expectedPlan && res.expiresDay === vec.expectedExpiresDay);
+        } else if (res.code === vec.expected) {
+          pass = true;
+        }
+
+        results.push({
+          name: vec.name_ar,
+          id: vec.id,
+          expected: vec.expected,
+          actual: res.code,
+          pass,
+          details: `Expires: ${res.expiresDay || '-'} | Plan: ${res.plan || '-'} | Device: ${res.deviceIdHex ? res.deviceIdHex.substr(0, 8) + '...' : '-'}`
+        });
+      }
+
+      // Check 2: Sign a payload with TEST private key and verify it with TEST public key
+      try {
+        const testPrivBytes = base64ToBytes(TEST_VECTORS.testPrivateKeyPkcs8B64);
+        const testPrivKey = await crypto.subtle.importKey(
+          "pkcs8",
+          testPrivBytes,
+          { name: "ECDSA", namedCurve: "P-256" },
+          false,
+          ["sign"]
+        );
+
+        const samplePayload = buildPayloadBytes(1, 1020, 1050, TEST_VECTORS.deviceIdHex);
+        const generatedToken = await signPayload(samplePayload, testPrivKey);
+        const verifyCheck = await verifyToken(generatedToken, testPubB64, TEST_VECTORS.deviceIdHex, pretendToday);
+
+        results.push({
+          name: "مسار التوقيع الكامل بالمفتاح التجريبي",
+          id: "signing_path_check",
+          expected: "OK",
+          actual: verifyCheck.code,
+          pass: (verifyCheck.valid && verifyCheck.code === "OK"),
+          details: `Generated Token: ${generatedToken.substr(0, 24)}...`
+        });
+      } catch (err) {
+        results.push({
+          name: "مسار التوقيع الكامل بالمفتاح التجريبي",
+          id: "signing_path_check",
+          expected: "OK",
+          actual: "ERROR: " + err.message,
+          pass: false,
+          details: err.message
+        });
+      }
+
+      // Render results
+      container.innerHTML = '';
+      let allPassed = true;
+      results.forEach(r => {
+        if (!r.pass) allPassed = false;
+        const div = document.createElement('div');
+        div.className = `test-result-item ${r.pass ? 'pass' : 'fail'}`;
+        div.innerHTML = `
+          <div class="test-header">
+            <span>${r.name} (${r.id})</span>
+            <span style="color: ${r.pass ? 'var(--verdict-green)' : 'var(--verdict-red)'}; font-weight: bold;">
+              ${r.pass ? 'نجاح (PASS) ✓' : 'فشل (FAIL) ✗'}
+            </span>
+          </div>
+          <div class="test-detail">المتوقع: <strong>${r.expected}</strong> | النتيجة: <strong>${r.actual}</strong></div>
+          <div class="test-detail">${r.details}</div>
+        `;
+        container.appendChild(div);
+      });
+
+      const summaryDiv = document.createElement('div');
+      summaryDiv.className = allPassed ? 'banner-info' : 'banner-danger';
+      summaryDiv.style.marginTop = '12px';
+      summaryDiv.innerHTML = allPassed
+        ? `<strong>✓ جميع متجهات الاختبار والمعادلات الرياضية مطابقة للمواصفات بنسبة 100%!</strong>`
+        : `<strong>✗ يوجد فشل في بعض الاختبارات، يرجى مراجعة التفاصيل أعلاه.</strong>`;
+      container.prepend(summaryDiv);
+    }
+
+    /* ==========================================================================
+       SECTION 11: BACKUP, RESTORE & DANGEROUS ACTIONS
+       ========================================================================== */
+    function backupKeys() {
+      const keystore = getKeystore();
+      if (!keystore) return alert("لا يوجد مفاتيح لتحميلها!");
+
+      const backupObj = {
+        app: "DriveFlow",
+        version: 1,
+        backupDate: new Date().toISOString(),
+        publicKeySpki: keystore.publicKeySpki,
+        saltB64: keystore.saltB64,
+        ivB64: keystore.ivB64,
+        ciphertextB64: keystore.ciphertextB64
+      };
+
+      downloadBlob(JSON.stringify(backupObj, null, 2), "driveflow-keys-backup.json", "application/json");
+    }
+
+    function restoreKeysFromFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (!imported.saltB64 || !imported.ivB64 || !imported.ciphertextB64 || !imported.publicKeySpki) {
+            throw new Error("ملف النسخة الاحتياطية غير صالح أو ناقص البيانات");
+          }
+          saveKeystore({
+            publicKeySpki: imported.publicKeySpki,
+            saltB64: imported.saltB64,
+            ivB64: imported.ivB64,
+            ciphertextB64: imported.ciphertextB64
+          });
+          initKeysUI();
+          alert("تم استعادة المفاتيح بنجاح! يرجى إدخال كلمة المرور لفك القفل.");
+          promptUnlock();
+        } catch (err) {
+          alert("فشل استعادة النسخة الاحتياطية: " + err.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function showConfirmationModal(title, warning, promptWord, callback) {
+      document.getElementById('confirmModalTitle').textContent = title;
+      document.getElementById('confirmModalWarning').textContent = warning;
+      document.getElementById('confirmModalPrompt').innerHTML = `للتأكيد، يرجى كتابة كلمة "<strong>${promptWord}</strong>" أدناه:`;
+      const input = document.getElementById('confirmWordInput');
+      const err = document.getElementById('confirmWordError');
+      err.classList.remove('visible');
+      input.value = '';
+
+      confirmActionCallback = () => {
+        if (input.value.trim().toLowerCase() === promptWord.toLowerCase()) {
+          closeModal('modalConfirmWord');
+          callback();
+        } else {
+          err.classList.add('visible');
+        }
+      };
+      openModal('modalConfirmWord');
+      input.focus();
+    }
+
+    /* ==========================================================================
+       SECTION 12: DOM INITIALIZATION & EVENT LISTENERS
+       ========================================================================== */
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Load Settings
+      const settings = getSettings();
+      currentLang = settings.lang || 'ar';
+      document.getElementById('cfgOwnerWhatsApp').value = settings.ownerWhatsApp;
+      document.getElementById('cfgOwnerInstaPay').value = settings.ownerInstaPay;
+      document.getElementById('cfgPriceText').value = settings.priceText;
+      document.getElementById('cfgTplKeyMsg').value = settings.tplKeyMsg;
+      document.getElementById('cfgTplReminder').value = settings.tplReminder;
+      setLanguage(currentLang);
+
+      // 2. Init Keys
+      initKeysUI();
+
+      // 3. Navigation Buttons
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const target = btn.getAttribute('data-target');
+          switchTab(target);
+        });
+      });
+
+      // 4. Language Switcher
+      document.getElementById('btnLangToggle').addEventListener('click', () => {
+        const newLang = currentLang === 'ar' ? 'en' : 'ar';
+        const s = getSettings();
+        s.lang = newLang;
+        saveSettings(s);
+        setLanguage(newLang);
+      });
+
+      // 5. Lock / Unlock Badge
+      document.getElementById('btnLockToggle').addEventListener('click', () => {
+        if (activePrivateKey) {
+          activePrivateKey = null;
+          updateLockStatusUI();
+          alert(currentLang === 'ar' ? 'تم قفل الأداة ومسح المفتاح الخاص من الذاكرة.' : 'Tool locked.');
+        } else {
+          promptUnlock();
+        }
+      });
+      document.getElementById('btnUnlockBanner').addEventListener('click', () => promptUnlock());
+
+      // 6. Create Key Pair
+      document.getElementById('btnCreateKeyPair').addEventListener('click', handleGenerateNewKeyPair);
+
+      // Submit Set Passphrase
+      document.getElementById('btnSubmitSetPass').addEventListener('click', async () => {
+        const p1 = document.getElementById('inputSetPass1').value;
+        const p2 = document.getElementById('inputSetPass2').value;
+        const err = document.getElementById('setPassError');
+
+        if (!p1 || p1.length < 8) {
+          err.textContent = currentLang === 'ar' ? "كلمة المرور يجب أن تكون 8 أحرف على الأقل." : "Password must be at least 8 characters.";
+          err.classList.add('visible');
+          return;
+        }
+        if (p1 !== p2) {
+          err.textContent = currentLang === 'ar' ? "كلمتا المرور غير متطابقتين." : "Passwords do not match.";
+          err.classList.add('visible');
+          return;
+        }
+
+        try {
+          const encrypted = await encryptPrivateKey(pendingKeyToEncrypt.pkcs8Bytes, p1);
+          saveKeystore({
+            publicKeySpki: pendingKeyToEncrypt.spkiB64,
+            saltB64: encrypted.saltB64,
+            ivB64: encrypted.ivB64,
+            ciphertextB64: encrypted.ciphertextB64
+          });
+
+          // Import as active private key
+          activePrivateKey = await crypto.subtle.importKey(
+            "pkcs8",
+            pendingKeyToEncrypt.pkcs8Bytes,
+            { name: "ECDSA", namedCurve: "P-256" },
+            false,
+            ["sign"]
+          );
+          activePublicKeySpkiB64 = pendingKeyToEncrypt.spkiB64;
+          pendingKeyToEncrypt = null;
+
+          closeModal('modalSetPass');
+          initKeysUI();
+          alert(currentLang === 'ar' ? "تم إنشاء زوج المفاتيح وحفظه مشفراً بنجاح!" : "Keys generated successfully!");
+        } catch (e) {
+          alert("Error saving key: " + e.message);
+        }
+      });
+
+      // Copy Public Key
+      document.getElementById('btnCopyPublicKey').addEventListener('click', () => {
+        const text = document.getElementById('publicKeyText').textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const btn = document.getElementById('btnCopyPublicKey');
+          btn.classList.add('btn-mint');
+          setTimeout(() => btn.classList.remove('btn-mint'), 1200);
+        });
+      });
+
+      // Backup & Restore
+      document.getElementById('btnBackupKeys').addEventListener('click', backupKeys);
+      document.getElementById('btnTriggerRestore').addEventListener('click', () => {
+        document.getElementById('fileRestoreInput').click();
+      });
+      document.getElementById('fileRestoreInput').addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          restoreKeysFromFile(e.target.files[0]);
+        }
+      });
+
+      // Regenerate with typed word
+      document.getElementById('btnShowRegenerateModal').addEventListener('click', () => {
+        showConfirmationModal(
+          "إعادة إنشاء زوج المفاتيح",
+          "تحذير: إنشاء زوج مفاتيح جديد سيؤدي إلى إلغاء صلاحية كافة المفاتيح المباعة سابقاً في التطبيقات المبنية بالمفتاح العام القديم!",
+          "تأكيد",
+          () => handleGenerateNewKeyPair()
+        );
+      });
+
+      // 7. Issue Key Form
+      document.getElementById('issueForm').addEventListener('submit', onIssueFormSubmit);
+      document.getElementById('deviceCodeInput').addEventListener('input', () => {
+        updateRenewalBanner();
+      });
+
+      // Plan chips
+      document.querySelectorAll('.chip-btn[data-plan]').forEach(chip => {
+        chip.addEventListener('click', () => {
+          document.querySelectorAll('.chip-btn[data-plan]').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+        });
+      });
+
+      // Duration chips
+      document.querySelectorAll('#durationChips .chip-btn').forEach(chip => {
+        chip.addEventListener('click', () => {
+          document.querySelectorAll('#durationChips .chip-btn').forEach(c => c.classList.remove('active'));
+          chip.classList.add('active');
+          const val = chip.getAttribute('data-days');
+          const customWrap = document.getElementById('customDaysWrap');
+          if (val === 'custom') {
+            customWrap.style.display = 'block';
+            document.getElementById('customDaysInput').focus();
+          } else {
+            customWrap.style.display = 'none';
+          }
+        });
+      });
+
+      // 8. Customers Ledger Controls
+      document.getElementById('customerSearchInput').addEventListener('input', renderCustomerList);
+      document.getElementById('btnExportCsv').addEventListener('click', exportLedgerCsv);
+      document.getElementById('btnExportJson').addEventListener('click', exportLedgerJson);
+      document.getElementById('btnImportJsonTrigger').addEventListener('click', () => {
+        document.getElementById('fileLedgerImportInput').click();
+      });
+      document.getElementById('fileLedgerImportInput').addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) {
+          importLedgerJson(e.target.files[0]);
+        }
+      });
+
+      // 9. Verify Tab
+      document.getElementById('btnPerformVerify').addEventListener('click', onVerifyFormSubmit);
+
+      // 10. Self-Test
+      document.getElementById('btnRunTestVectors').addEventListener('click', runSelfTests);
+
+      // 11. Save Settings
+      document.getElementById('btnSaveSettings').addEventListener('click', () => {
+        const s = getSettings();
+        s.ownerWhatsApp = document.getElementById('cfgOwnerWhatsApp').value.trim();
+        s.ownerInstaPay = document.getElementById('cfgOwnerInstaPay').value.trim();
+        s.priceText = document.getElementById('cfgPriceText').value.trim();
+        s.tplKeyMsg = document.getElementById('cfgTplKeyMsg').value;
+        s.tplReminder = document.getElementById('cfgTplReminder').value;
+        saveSettings(s);
+        alert(currentLang === 'ar' ? 'تم حفظ الإعدادات بنجاح!' : 'Settings saved successfully!');
+      });
+
+      // Change Passphrase
+      document.getElementById('btnChangePassphraseTrigger').addEventListener('click', () => {
+        const keystore = getKeystore();
+        if (!keystore) return alert("لا يوجد مفتاح محفوظ!");
+        promptUnlock(async () => {
+          // Export active private key to pkcs8
+          const pkcs8Buf = await crypto.subtle.exportKey("pkcs8", activePrivateKey);
+          pendingKeyToEncrypt = {
+            spkiB64: keystore.publicKeySpki,
+            pkcs8Bytes: new Uint8Array(pkcs8Buf)
+          };
+          openModal('modalSetPass');
+        });
+      });
+
+      // Clear all data
+      document.getElementById('btnClearAllDataTrigger').addEventListener('click', () => {
+        showConfirmationModal(
+          "مسح كافة البيانات",
+          "سيتم مسح زوج المفاتيح وكامل سجل العملاء والإعدادات من المتصفح نهائياً!",
+          "حذف الكل",
+          () => {
+            localStorage.clear();
+            activePrivateKey = null;
+            activePublicKeySpkiB64 = null;
+            location.reload();
+          }
+        );
+      });
+
+      // Modal close handlers
+      document.getElementById('btnCloseUnlockModal').addEventListener('click', () => closeModal('modalUnlock'));
+      document.getElementById('btnCloseSetPassModal').addEventListener('click', () => closeModal('modalSetPass'));
+      document.getElementById('btnCloseDetailsModal').addEventListener('click', () => closeModal('modalCustomerDetails'));
+      document.getElementById('btnCloseConfirmModal').addEventListener('click', () => closeModal('modalConfirmWord'));
+      document.getElementById('btnExecuteConfirmedAction').addEventListener('click', () => {
+        if (confirmActionCallback) confirmActionCallback();
+      });
+    });
+  </script>
+</body>
+</html>

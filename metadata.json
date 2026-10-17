@@ -1,0 +1,6 @@
+{
+  "name": "DriveFlow Key Tool",
+  "description": "Offline subscription key issuing tool and license manager for DriveFlow.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
